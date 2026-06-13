@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家庭记账系统 · 技术设计文档 v1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f8f6f1;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --text: #1a1a1a;
+  --text-secondary: #555;
+  --text-muted: #888;
+  --accent: #b8860b;
+  --accent-light: #f5e6c8;
+  --accent-dim: #d4a843;
+  --border: #e0dbd2;
+  --border-light: #eee9e0;
+  --code-bg: #1e1e2e;
+  --code-text: #cdd6f4;
+  --success: #2d8a4e;
+  --danger: #c0392b;
+  --info: #2980b9;
+  --warn: #d4a017;
+  --sidebar-w: 280px;
+  --header-h: 64px;
+  --radius: 6px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 24px); }
+body {
+  font-family: 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.75;
+  font-size: 15px;
+}
+
+/* SIDEBAR */
+.sidebar {
+  position: fixed;
+  top: 0; left: 0;
+  width: var(--sidebar-w);
+  height: 100vh;
+  background: #faf8f3;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  z-index: 200;
+  padding: 24px 0;
+  scrollbar-width: thin;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.sidebar-logo {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.sidebar-logo h2 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.4;
+}
+.sidebar-logo .ver {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  margin-top: 4px;
+}
+.nav-group { margin-bottom: 8px; }
+.nav-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 8px 20px 4px;
+}
+.nav-link {
+  display: block;
+  padding: 6px 20px 6px 28px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+}
+.nav-link:hover {
+  color: var(--accent);
+  background: var(--accent-light);
+}
+.nav-link.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 600;
+  background: rgba(184,134,11,0.06);
+}
+
+/* MAIN CONTENT */
+.main {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+}
+.topbar {
+  position: sticky;
+  top: 0;
+  height: var(--header-h);
+  background: rgba(248,246,241,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 40px;
+  z-index: 100;
+  gap: 16px;
+}
+.topbar .title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+.topbar .meta {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.content {
+  max-width: 900px;
+  padding: 32px 40px 80px;
+}
+
+/* TYPOGRAPHY */
+h1 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 32px;
+  font-weight: 900;
+  margin: 48px 0 12px;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+h1:first-child { margin-top: 0; }
+h2 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 48px 0 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  color: var(--text);
+}
+h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 32px 0 12px;
+  color: var(--text);
+}
+h4 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 24px 0 8px;
+  color: var(--text-secondary);
+}
+p { margin-bottom: 12px; }
+.lead { font-size: 16px; color: var(--text-secondary); margin-bottom: 24px; }
+ul, ol { padding-left: 24px; margin-bottom: 16px; }
+li { margin-bottom: 6px; }
+strong { font-weight: 600; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* CODE */
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  background: rgba(184,134,11,0.08);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+pre {
+  background: var(--code-bg);
+  color: var(--code-text);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 12px 0 24px;
+  border: 1px solid #313244;
+  position: relative;
+}
+pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+pre .cm { color: #6c7086; }
+pre .kw { color: #cba6f7; }
+pre .st { color: #a6e3a1; }
+pre .fn { color: #89b4fa; }
+pre .nb { color: #fab387; }
+pre .nu { color: #f9e2af; }
+pre .op { color: #89dceb; }
+
+/* TABLES */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 24px;
+  font-size: 14px;
+}
+thead th {
+  background: #f0ece4;
+  font-weight: 600;
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: top;
+}
+tbody tr:hover { background: rgba(184,134,11,0.03); }
+td code { font-size: 12px; }
+
+/* CALLOUT BOXES */
+.callout {
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.7;
+  border-left: 4px solid;
+}
+.callout-info {
+  background: #eef4fb;
+  border-color: var(--info);
+  color: #1a5276;
+}
+.callout-warn {
+  background: #fdf6e3;
+  border-color: var(--warn);
+  color: #6e5a00;
+}
+.callout-success {
+  background: #eafaf1;
+  border-color: var(--success);
+  color: #1a5c32;
+}
+.callout-danger {
+  background: #fdedec;
+  border-color: var(--danger);
+  color: #7b241c;
+}
+.callout strong { display: block; margin-bottom: 4px; }
+
+/* TAGS */
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin: 1px 2px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.tag-pk { background: #fef3cd; color: #856404; }
+.tag-fk { background: #d4edda; color: #155724; }
+.tag-idx { background: #d1ecf1; color: #0c5460; }
+.tag-uq { background: #f8d7da; color: #721c24; }
+.tag-nn { background: #e2e3e5; color: #383d41; }
+.tag-default { background: #e8daef; color: #6c3483; }
+
+/* ERD-like diagram */
+.erd-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 16px 0;
+  overflow: hidden;
+}
+.erd-header {
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  color: white;
+  padding: 10px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.erd-header .icon { font-size: 16px; }
+.erd-body { padding: 0; }
+.erd-row {
+  display: flex;
+  align-items: baseline;
+  padding: 5px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-light);
+  gap: 12px;
+}
+.erd-row:last-child { border-bottom: none; }
+.erd-row:nth-child(even) { background: rgba(0,0,0,0.015); }
+.erd-col-name {
+  width: 180px;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  color: var(--text);
+}
+.erd-col-type {
+  width: 160px;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--info);
+}
+.erd-col-constraint {
+  width: 80px;
+  flex-shrink: 0;
+}
+.erd-col-desc {
+  flex: 1;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+/* API CARD */
+.api-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 12px 0;
+  overflow: hidden;
+}
+.api-card-header {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-light);
+  cursor: pointer;
+}
+.api-method {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 4px;
+  min-width: 50px;
+  text-align: center;
+}
+.method-get { background: #d4edda; color: #155724; }
+.method-post { background: #cce5ff; color: #004085; }
+.method-put { background: #fff3cd; color: #856404; }
+.method-delete { background: #f8d7da; color: #721c24; }
+.api-path {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text);
+}
+.api-desc {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* DIVIDER */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 40px 0;
+}
+
+/* FOOTER */
+footer {
+  padding: 24px 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* BACK TO TOP */
+.back-top {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 40px;
+  height: 40px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.2s;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+.back-top.show { opacity: 1; }
+.back-top:hover { transform: translateY(-2px); }
+
+/* RESPONSIVE */
+@media (max-width: 960px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .content { padding: 24px 20px 60px; }
+  .topbar { padding: 0 20px; }
+}
+
+/* PRINT */
+@media print {
+  .sidebar, .topbar, .back-top { display: none; }
+  .main { margin-left: 0; }
+  .content { max-width: 100%; padding: 0; }
+  h1, h2, h3 { page-break-after: avoid; }
+  pre, table, .erd-card, .api-card { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR NAV -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <h2>家庭记账系统</h2>
+    <div class="ver">Technical Design Document v1.0</div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">概述</div>
+    <a class="nav-link active" href="#s1">1. 项目概述</a>
+    <a class="nav-link" href="#s2">2. 功能需求</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">技术架构</div>
+    <a class="nav-link" href="#s3">3. 技术选型</a>
+    <a class="nav-link" href="#s4">4. 系统架构</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">数据库设计</div>
+    <a class="nav-link" href="#s5">5. 数据库总览</a>
+    <a class="nav-link" href="#s5a">5.1 users</a>
+    <a class="nav-link" href="#s5b">5.2 families</a>
+    <a class="nav-link" href="#s5c">5.3 family_members</a>
+    <a class="nav-link" href="#s5d">5.4 categories</a>
+    <a class="nav-link" href="#s5e">5.5 sub_categories</a>
+    <a class="nav-link" href="#s5f">5.6 transactions</a>
+    <a class="nav-link" href="#s5g">5.7 budgets</a>
+    <a class="nav-link" href="#s5h">5.8 payment_methods / fund_sources</a>
+    <a class="nav-link" href="#s5i">5.9 refresh_tokens / op_logs</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">接口设计</div>
+    <a class="nav-link" href="#s6">6. API 设计规范</a>
+    <a class="nav-link" href="#s7">7. 接口清单</a>
+    <a class="nav-link" href="#s7a">7.1 认证</a>
+    <a class="nav-link" href="#s7b">7.2 用户/家庭</a>
+    <a class="nav-link" href="#s7c">7.3 分类</a>
+    <a class="nav-link" href="#s7d">7.4 交易</a>
+    <a class="nav-link" href="#s7e">7.5 预算</a>
+    <a class="nav-link" href="#s7f">7.6 报表</a>
+    <a class="nav-link" href="#s7g">7.7 仪表盘</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">前端设计</div>
+    <a class="nav-link" href="#s8">8. 前端架构</a>
+    <a class="nav-link" href="#s9">9. 页面设计</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">安全与部署</div>
+    <a class="nav-link" href="#s10">10. 认证与安全</a>
+    <a class="nav-link" href="#s11">11. 部署方案</a>
+    <a class="nav-link" href="#s12">12. 开发规范</a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <span class="title">家庭记账系统 · 技术设计文档</span>
+    <span class="meta">v1.0 · 2026-06-13</span>
+  </div>
+  <div class="content">
+
+<!-- ============================================================ -->
+<!-- S1: PROJECT OVERVIEW -->
+<!-- ============================================================ -->
+<h1 id="s1">1. 项目概述</h1>
+<p class="lead">家庭记账系统（Family Finance Tracker）是一个 B/S 架构的 Web 应用，支持家庭成员共同记录和管理日常收支，提供多维度的汇总分析、预算管理和可视化报表。</p>
+
+<h3>1.1 项目目标</h3>
+<ul>
+  <li>替代 Excel/纸质记账，提供随时随地可用的 Web 记账体验</li>
+  <li>支持多成员协作，每人独立记账但数据汇总分析</li>
+  <li>提供预算管理、超支预警、报销跟踪等实用功能</li>
+  <li>保障数据安全，支持认证授权、操作审计</li>
+  <li>支持数据导入/导出，兼容 Excel 和 CSV 格式</li>
+</ul>
+
+<h3>1.2 目标用户</h3>
+<ul>
+  <li><strong>主要用户：</strong>家庭中负责记账的成员（通常 1-2 人）</li>
+  <li><strong>次要用户：</strong>其他家庭成员（查看报表、偶尔记账）</li>
+  <li><strong>使用场景：</strong>手机端快速记账、电脑端数据管理和分析</li>
+</ul>
+
+<h3>1.3 设计原则</h3>
+<ul>
+  <li><strong>移动优先：</strong>核心记账功能在手机端操作流畅</li>
+  <li><strong>数据安全：</strong>密码加密存储，JWT 认证，操作日志审计</li>
+  <li><strong>可扩展性：</strong>分类、标签等均可自定义，支持家庭间隔离</li>
+  <li><strong>AI 可实现：</strong>本文档作为 AI 辅助开发的完整技术规格说明</li>
+</ul>
+
+<!-- ============================================================ -->
+<!-- S2: FUNCTIONAL REQUIREMENTS -->
+<!-- ============================================================ -->
+<h2 id="s2">2. 功能需求</h2>
+
+<h3>2.1 功能模块清单</h3>
+<table>
+  <thead>
+    <tr><th>模块</th><th>功能</th><th>优先级</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>认证</strong></td><td>注册、登录、登出、刷新令牌</td><td>P0</td><td>JWT 认证，支持记住登录</td></tr>
+    <tr><td><strong>用户</strong></td><td>个人资料、修改密码</td><td>P0</td><td>头像可选上传</td></tr>
+    <tr><td><strong>家庭</strong></td><td>创建家庭、邀请加入、成员管理</td><td>P0</td><td>邀请码机制</td></tr>
+    <tr><td><strong>记账</strong></td><td>新增/编辑/删除交易记录</td><td>P0</td><td>核心功能，支持软删除</td></tr>
+    <tr><td><strong>分类</strong></td><td>管理大分类和小分类</td><td>P0</td><td>含系统默认分类 + 自定义</td></tr>
+    <tr><td><strong>支付方式</strong></td><td>管理支付方式列表</td><td>P1</td><td>含系统默认 + 自定义</td></tr>
+    <tr><td><strong>资金来源</strong></td><td>管理资金来源列表</td><td>P1</td><td>含系统默认 + 自定义</td></tr>
+    <tr><td><strong>预算</strong></td><td>设定月度预算、查看执行情况</td><td>P1</td><td>按分类设定，超支预警</td></tr>
+    <tr><td><strong>报表</strong></td><td>月度总览、分类分析、趋势图</td><td>P1</td><td>图表可视化</td></tr>
+    <tr><td><strong>仪表盘</strong></td><td>收支概览、近期记录、预算进度</td><td>P1</td><td>登录后首页</td></tr>
+    <tr><td><strong>导入/导出</strong></td><td>CSV/Excel 导入导出</td><td>P2</td><td>兼容之前表格方案的数据</td></tr>
+    <tr><td><strong>附件</strong></td><td>上传收据/发票照片</td><td>P2</td><td>存储到本地或 OSS</td></tr>
+    <tr><td><strong>操作日志</strong></td><td>记录关键操作</td><td>P2</td><td>登录、删除等操作审计</td></tr>
+  </tbody>
+</table>
+
+<h3>2.2 交易记录字段（核心）</h3>
+<p>交易记录是系统核心数据，字段设计如下：</p>
+<table>
+  <thead>
+    <tr><th>字段</th><th>必填</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>日期</td><td>是</td><td>交易发生日期</td></tr>
+    <tr><td>时间</td><td>否</td><td>交易发生时间</td></tr>
+    <tr><td>收支类型</td><td>是</td><td>支出 / 收入</td></tr>
+    <tr><td>金额</td><td>是</td><td>正数，单位：元，精度：2 位小数</td></tr>
+    <tr><td>内容描述</td><td>是</td><td>买了什么 / 给谁转账</td></tr>
+    <tr><td>交易对象</td><td>否</td><td>商家名称 / 收款人 / 平台</td></tr>
+    <tr><td>支付方式</td><td>是</td><td>支付宝 / 微信 / 刷卡 / 现金等</td></tr>
+    <tr><td>资金来源</td><td>是</td><td>支付宝余额 / 余额宝 / 银行卡等</td></tr>
+    <tr><td>大分类</td><td>是</td><td>餐饮美食 / 交通出行等</td></tr>
+    <tr><td>小分类</td><td>是</td><td>早餐 / 午餐等（随大分类联动）</td></tr>
+    <tr><td>记账人</td><td>是</td><td>家庭成员（谁花的钱）</td></tr>
+    <tr><td>报销状态</td><td>否</td><td>否 / 待报销 / 已报销</td></tr>
+    <tr><td>必要程度</td><td>否</td><td>必要 / 需要 / 想要</td></tr>
+    <tr><td>是否固定</td><td>否</td><td>固定 / 偶发</td></tr>
+    <tr><td>备注</td><td>否</td><td>其他补充</td></tr>
+    <tr><td>附件</td><td>否</td><td>收据/发票图片</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<!-- S3: TECH STACK -->
+<!-- ============================================================ -->
+<h2 id="s3">3. 技术选型</h2>
+
+<h3>3.1 后端</h3>
+<table>
+  <thead>
+    <tr><th>组件</th><th>选型</th><th>版本</th><th>选型理由</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>语言</strong></td><td>Python</td><td>3.11+</td><td>生态成熟，AI 辅助开发友好</td></tr>
+    <tr><td><strong>Web 框架</strong></td><td>FastAPI</td><td>0.110+</td><td>高性能异步框架，自动生成 OpenAPI 文档，Pydantic 数据校验</td></tr>
+    <tr><td><strong>ORM</strong></td><td>SQLAlchemy 2.0</td><td>2.0+</td><td>Python 最成熟的 ORM，支持异步</td></tr>
+    <tr><td><strong>数据库迁移</strong></td><td>Alembic</td><td>1.13+</td><td>SQLAlchemy 配套迁移工具</td></tr>
+    <tr><td><strong>数据库</strong></td><td>PostgreSQL</td><td>15+</td><td>可靠的关系型数据库，支持 JSON、全文检索</td></tr>
+    <tr><td><strong>缓存</strong></td><td>Redis</td><td>7+</td><td>JWT 黑名单、速率限制、会话缓存</td></tr>
+    <tr><td><strong>认证</strong></td><td>python-jose + passlib</td><td>-</td><td>JWT 签发验证 + bcrypt 密码哈希</td></tr>
+    <tr><td><strong>任务队列</strong></td><td>暂不需要</td><td>-</td><td>初期同步处理即可，后期可加 Celery</td></tr>
+  </tbody>
+</table>
+
+<h3>3.2 前端</h3>
+<table>
+  <thead>
+    <tr><th>组件</th><th>选型</th><th>版本</th><th>选型理由</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>框架</strong></td><td>Vue 3</td><td>3.4+</td><td>渐进式框架，组合式 API 灵活高效</td></tr>
+    <tr><td><strong>语言</strong></td><td>TypeScript</td><td>5.3+</td><td>类型安全，减少运行时错误</td></tr>
+    <tr><td><strong>构建工具</strong></td><td>Vite</td><td>5+</td><td>极快的开发服务器和构建速度</td></tr>
+    <tr><td><strong>UI 组件库</strong></td><td>Element Plus</td><td>2.5+</td><td>成熟的 Vue 3 组件库，中文文档完善</td></tr>
+    <tr><td><strong>状态管理</strong></td><td>Pinia</td><td>2.1+</td><td>Vue 3 官方推荐状态管理</td></tr>
+    <tr><td><strong>路由</strong></td><td>Vue Router</td><td>4.3+</td><td>Vue 官方路由</td></tr>
+    <tr><td><strong>HTTP 客户端</strong></td><td>Axios</td><td>1.7+</td><td>拦截器机制便于统一处理 Token</td></tr>
+    <tr><td><strong>图表库</strong></td><td>ECharts</td><td>5.5+</td><td>功能最全的图表库</td></tr>
+    <tr><td><strong>日期处理</strong></td><td>Day.js</td><td>1.11+</td><td>轻量级日期库</td></tr>
+    <tr><td><strong>CSS 方案</strong></td><td>SCSS + Element Plus 主题</td><td>-</td><td>变量覆盖定制主题</td></tr>
+  </tbody>
+</table>
+
+<h3>3.3 基础设施</h3>
+<table>
+  <thead>
+    <tr><th>组件</th><th>选型</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>容器化</strong></td><td>Docker + Docker Compose</td><td>一键部署，环境一致性</td></tr>
+    <tr><td><strong>反向代理</strong></td><td>Nginx</td><td>静态文件服务 + API 转发 + SSL</td></tr>
+    <tr><td><strong>SSL</strong></td><td>Let's Encrypt</td><td>免费 HTTPS 证书</td></tr>
+    <tr><td><strong>文件存储</strong></td><td>本地文件系统</td><td>初期本地存储，后期可迁移 OSS</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<!-- S4: SYSTEM ARCHITECTURE -->
+<!-- ============================================================ -->
+<h2 id="s4">4. 系统架构</h2>
+
+<h3>4.1 架构图（文字描述）</h3>
+<pre><code>
+┌─────────────────────────────────────────────────────────────┐
+│                      <span class="cm">Client Browser</span>                          │
+│         <span class="cm">Vue 3 + Element Plus + ECharts</span>                       │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ <span class="cm">HTTPS (443)</span>
+                       ▼
+┌──────────────────────────────────────────────────────────────┐
+│                         <span class="kw">Nginx</span>                                │
+│  <span class="cm">静态文件: /usr/share/nginx/html (Vue 构建产物)</span>               │
+│  <span class="cm">API 转发:  /api/* → http://backend:8000</span>                     │
+│  <span class="cm">SSL 终止:  Let's Encrypt 证书</span>                                │
+└──────┬───────────────────────────────────┬───────────────────┘
+       │ <span class="cm">HTTP (8000)</span>                      │ <span class="cm">HTTP (6379)</span>
+       ▼                                   ▼
+┌─────────────────────┐          ┌─────────────────┐
+│    <span class="fn">FastAPI Backend</span>   │          │     <span class="fn">Redis</span>        │
+│                     │          │                 │
+│ <span class="cm">Auth / Users</span>        │          │ <span class="cm">JWT 黑名单</span>     │
+│ <span class="cm">Transactions</span>        │◄────────►│ <span class="cm">速率限制</span>       │
+│ <span class="cm">Categories</span>          │          │ <span class="cm">会话缓存</span>       │
+│ <span class="cm">Budgets / Reports</span>   │          └─────────────────┘
+│                     │
+│ <span class="cm">SQLAlchemy 2.0</span>      │
+└──────┬──────────────┘
+       │ <span class="cm">TCP (5432)</span>
+       ▼
+┌─────────────────────────────┐
+│        <span class="nb">PostgreSQL 15</span>          │
+│                             │
+│  <span class="cm">users, families</span>            │
+│  <span class="cm">transactions, categories</span>   │
+│  <span class="cm">budgets, op_logs</span>           │
+└─────────────────────────────┘
+</code></pre>
+
+<h3>4.2 项目目录结构</h3>
+<pre><code>
+family-finance/
+├── <span class="kw">docker-compose.yml</span>
+├── <span class="kw">.env.example</span>
+│
+├── <span class="fn">backend/</span>                   <span class="cm"># 后端服务</span>
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── alembic.ini
+│   ├── alembic/
+│   │   └── versions/          <span class="cm"># 数据库迁移脚本</span>
+│   └── app/
+│       ├── __init__.py
+│       ├── main.py             <span class="cm"># FastAPI 应用入口</span>
+│       ├── config.py           <span class="cm"># 配置（环境变量读取）</span>
+│       ├── database.py         <span class="cm"># 数据库连接</span>
+│       ├── security.py         <span class="cm"># JWT + 密码工具</span>
+│       ├── dependencies.py     <span class="cm"># 公共依赖注入</span>
+│       ├── models/             <span class="cm"># SQLAlchemy 模型</span>
+│       │   ├── __init__.py
+│       │   ├── user.py
+│       │   ├── family.py
+│       │   ├── category.py
+│       │   ├── transaction.py
+│       │   ├── budget.py
+│       │   └── enums.py        <span class="cm"># 枚举类型定义</span>
+│       ├── schemas/            <span class="cm"># Pydantic 请求/响应模型</span>
+│       │   ├── __init__.py
+│       │   ├── auth.py
+│       │   ├── user.py
+│       │   ├── family.py
+│       │   ├── category.py
+│       │   ├── transaction.py
+│       │   ├── budget.py
+│       │   ├── report.py
+│       │   └── common.py       <span class="cm"># 分页、响应包装</span>
+│       ├── routers/            <span class="cm"># API 路由</span>
+│       │   ├── __init__.py
+│       │   ├── auth.py
+│       │   ├── users.py
+│       │   ├── families.py
+│       │   ├── categories.py
+│       │   ├── transactions.py
+│       │   ├── budgets.py
+│       │   ├── reports.py
+│       │   └── dashboard.py
+│       ├── services/           <span class="cm"># 业务逻辑层</span>
+│       │   ├── auth_service.py
+│       │   ├── transaction_service.py
+│       │   ├── report_service.py
+│       │   └── ...
+│       └── utils/              <span class="cm"># 工具函数</span>
+│           ├── pagination.py
+│           ├── file_upload.py
+│           └── csv_handler.py
+│
+├── <span class="fn">frontend/</span>                  <span class="cm"># 前端应用</span>
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tsconfig.json
+│   ├── index.html
+│   └── src/
+│       ├── main.ts
+│       ├── App.vue
+│       ├── router/
+│       │   └── index.ts        <span class="cm"># 路由定义</span>
+│       ├── stores/             <span class="cm"># Pinia 状态管理</span>
+│       │   ├── auth.ts
+│       │   ├── family.ts
+│       │   └── app.ts
+│       ├── api/                <span class="cm"># API 请求封装</span>
+│       │   ├── request.ts      <span class="cm"># Axios 实例 + 拦截器</span>
+│       │   ├── auth.ts
+│       │   ├── transaction.ts
+│       │   └── ...
+│       ├── views/              <span class="cm"># 页面组件</span>
+│       │   ├── Login.vue
+│       │   ├── Register.vue
+│       │   ├── Dashboard.vue
+│       │   ├── TransactionList.vue
+│       │   ├── TransactionForm.vue
+│       │   ├── CategoryManage.vue
+│       │   ├── BudgetManage.vue
+│       │   ├── ReportMonthly.vue
+│       │   ├── ReportCategory.vue
+│       │   ├── Settings.vue
+│       │   └── ...
+│       ├── components/         <span class="cm"># 通用组件</span>
+│       │   ├── AppLayout.vue
+│       │   ├── Sidebar.vue
+│       │   ├── TransactionCard.vue
+│       │   ├── CategoryPicker.vue
+│       │   ├── AmountInput.vue
+│       │   ├── MonthPicker.vue
+│       │   └── ...
+│       ├── composables/        <span class="cm"># 组合式函数</span>
+│       │   ├── useAuth.ts
+│       │   └── usePagination.ts
+│       ├── types/              <span class="cm"># TypeScript 类型定义</span>
+│       │   ├── transaction.ts
+│       │   ├── category.ts
+│       │   └── ...
+│       ├── utils/              <span class="cm"># 工具函数</span>
+│       │   ├── format.ts       <span class="cm"># 金额、日期格式化</span>
+│       │   └── validator.ts
+│       └── styles/             <span class="cm"># 全局样式</span>
+│           ├── variables.scss
+│           └── global.scss
+│
+└── <span class="fn">nginx/</span>
+    └── nginx.conf              <span class="cm"># Nginx 配置</span>
+</code></pre>
+
+<!-- ============================================================ -->
+<!-- S5: DATABASE DESIGN -->
+<!-- ============================================================ -->
+<h2 id="s5">5. 数据库设计</h2>
+<p>共 10 张表，使用 PostgreSQL。所有表均包含 <code>id</code>（UUID 主键）、<code>created_at</code>、<code>updated_at</code> 基础字段。金额字段统一使用 <code>DECIMAL(12,2)</code>，时间使用 <code>TIMESTAMP WITH TIME ZONE</code>。</p>
+
+<h3>5.0 关系总览</h3>
+<pre><code>
+<span class="kw">users</span> 1──N <span class="kw">family_members</span> N──1 <span class="kw">families</span>
+                                        │
+              ┌─────────────────┬───────┼─────────────┬──────────────┐
+              │                 │       │             │              │
+              ▼                 ▼       ▼             ▼              ▼
+        <span class="fn">categories</span>      <span class="fn">payment_methods</span>  <span class="fn">fund_sources</span>  <span class="fn">budgets</span>     <span class="fn">transactions</span>
+              │                                                            │
+              ▼                                                            │
+      <span class="fn">sub_categories</span> ◄─────────────────────────────────────────────────────┘
+</code></pre>
+
+<!-- 5.1 users -->
+<h3 id="s5a">5.1 users（用户表）</h3>
+<div class="erd-card">
+  <div class="erd-header"><span class="icon">👤</span> users</div>
+  <div class="erd-body">
+    <div class="erd-row">
+      <div class="erd-col-name">id</div>
+      <div class="erd-col-type">UUID</div>
+      <div class="erd-col-constraint"><span class="tag tag-pk">PK</span></div>
+      <div class="erd-col-desc">主键，gen_random_uuid()</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">username</div>
+      <div class="erd-col-type">VARCHAR(50)</div>
+      <div class="erd-col-constraint"><span class="tag tag-uq">UQ</span><span class="tag tag-nn">NN</span></div>
+      <div class="erd-col-desc">登录用户名，唯一</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">email</div>
+      <div class="erd-col-type">VARCHAR(255)</div>
+      <div class="erd-col-constraint"><span class="tag tag-uq">UQ</span><span class="tag tag-nn">NN</span></div>
+      <div class="erd-col-desc">邮箱地址，唯一</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">password_hash</div>
+      <div class="erd-col-type">VARCHAR(255)</div>
+      <div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div>
+      <div class="erd-col-desc">bcrypt 哈希后的密码</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">nickname</div>
+      <div class="erd-col-type">VARCHAR(50)</div>
+      <div class="erd-col-constraint"></div>
+      <div class="erd-col-desc">用户昵称</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">avatar_url</div>
+      <div class="erd-col-type">VARCHAR(500)</div>
+      <div class="erd-col-constraint"></div>
+      <div class="erd-col-desc">头像地址</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">phone</div>
+      <div class="erd-col-type">VARCHAR(20)</div>
+      <div class="erd-col-constraint"></div>
+      <div class="erd-col-desc">手机号（可选）</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">is_active</div>
+      <div class="erd-col-type">BOOLEAN</div>
+      <div class="erd-col-constraint"><span class="tag tag-default">DEFAULT TRUE</span></div>
+      <div class="erd-col-desc">账号是否激活</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">last_login_at</div>
+      <div class="erd-col-type">TIMESTAMPTZ</div>
+      <div class="erd-col-constraint"></div>
+      <div class="erd-col-desc">最后登录时间</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">created_at</div>
+      <div class="erd-col-type">TIMESTAMPTZ</div>
+      <div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div>
+      <div class="erd-col-desc">创建时间</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">updated_at</div>
+      <div class="erd-col-type">TIMESTAMPTZ</div>
+      <div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div>
+      <div class="erd-col-desc">更新时间</div>
+    </div>
+  </div>
+</div>
+<p><strong>索引：</strong><code>idx_users_username</code>(username), <code>idx_users_email</code>(email)</p>
+
+<!-- 5.2 families -->
+<h3 id="s5b">5.2 families（家庭表）</h3>
+<div class="erd-card">
+  <div class="erd-header"><span class="icon">👨‍👩‍👧‍👦</span> families</div>
+  <div class="erd-body">
+    <div class="erd-row">
+      <div class="erd-col-name">id</div>
+      <div class="erd-col-type">UUID</div>
+      <div class="erd-col-constraint"><span class="tag tag-pk">PK</span></div>
+      <div class="erd-col-desc">主键</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">name</div>
+      <div class="erd-col-type">VARCHAR(100)</div>
+      <div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div>
+      <div class="erd-col-desc">家庭名称</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">invite_code</div>
+      <div class="erd-col-type">VARCHAR(20)</div>
+      <div class="erd-col-constraint"><span class="tag tag-uq">UQ</span></div>
+      <div class="erd-col-desc">邀请码，注册/创建家庭时自动生成</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">owner_id</div>
+      <div class="erd-col-type">UUID</div>
+      <div class="erd-col-constraint"><span class="tag tag-fk">FK</span><span class="tag tag-nn">NN</span></div>
+      <div class="erd-col-desc">家庭创建者 → users.id</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">created_at</div>
+      <div class="erd-col-type">TIMESTAMPTZ</div>
+      <div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div>
+      <div class="erd-col-desc">创建时间</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">updated_at</div>
+      <div class="erd-col-type">TIMESTAMPTZ</div>
+      <div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div>
+      <div class="erd-col-desc">更新时间</div>
+    </div>
+  </div>
+</div>
+
+<!-- 5.3 family_members -->
+<h3 id="s5c">5.3 family_members（家庭成员关系表）</h3>
+<div class="erd-card">
+  <div class="erd-header"><span class="icon">🔗</span> family_members</div>
+  <div class="erd-body">
+    <div class="erd-row">
+      <div class="erd-col-name">id</div>
+      <div class="erd-col-type">UUID</div>
+      <div class="erd-col-constraint"><span class="tag tag-pk">PK</span></div>
+      <div class="erd-col-desc">主键</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">family_id</div>
+      <div class="erd-col-type">UUID</div>
+      <div class="erd-col-constraint"><span class="tag tag-fk">FK</span><span class="tag tag-nn">NN</span></div>
+      <div class="erd-col-desc">→ families.id</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">user_id</div>
+      <div class="erd-col-type">UUID</div>
+      <div class="erd-col-constraint"><span class="tag tag-fk">FK</span><span class="tag tag-nn">NN</span></div>
+      <div class="erd-col-desc">→ users.id</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">role</div>
+      <div class="erd-col-type">VARCHAR(20)</div>
+      <div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div>
+      <div class="erd-col-desc">角色：owner / admin / member</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">display_name</div>
+      <div class="erd-col-type">VARCHAR(50)</div>
+      <div class="erd-col-constraint"></div>
+      <div class="erd-col-desc">在家庭中的显示名（如"爸爸"、"妈妈"）</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">joined_at</div>
+      <div class="erd-col-type">TIMESTAMPTZ</div>
+      <div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div>
+      <div class="erd-col-desc">加入时间</div>
+    </div>
+  </div>
+</div>
+<p><strong>约束：</strong><code>UNIQUE(family_id, user_id)</code> — 同一用户在同一家庭中只能有一条记录</p>
+<p><strong>业务规则：</strong>注册时自动创建一个家庭，该用户为 owner。其他成员通过邀请码加入。</p>
+
+<!-- 5.4 categories -->
+<h3 id="s5d">5.4 categories（大分类表）</h3>
+<div class="erd-card">
+  <div class="erd-header"><span class="icon">🏷️</span> categories</div>
+  <div class="erd-body">
+    <div class="erd-row">
+      <div class="erd-col-name">id</div>
+      <div class="erd-col-type">UUID</div>
+      <div class="erd-col-constraint"><span class="tag tag-pk">PK</span></div>
+      <div class="erd-col-desc">主键</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">family_id</div>
+      <div class="erd-col-type">UUID</div>
+      <div class="erd-col-constraint"><span class="tag tag-fk">FK</span></div>
+      <div class="erd-col-desc">→ families.id（NULL 表示系统默认分类）</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">name</div>
+      <div class="erd-col-type">VARCHAR(50)</div>
+      <div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div>
+      <div class="erd-col-desc">分类名称（如"餐饮美食"）</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">type</div>
+      <div class="erd-col-type">VARCHAR(10)</div>
+      <div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div>
+      <div class="erd-col-desc">expense / income</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">icon</div>
+      <div class="erd-col-type">VARCHAR(50)</div>
+      <div class="erd-col-constraint"></div>
+      <div class="erd-col-desc">图标标识（如 "food", "transport"）</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">color</div>
+      <div class="erd-col-type">VARCHAR(7)</div>
+      <div class="erd-col-constraint"><span class="tag tag-default">DEFAULT '#666666'</span></div>
+      <div class="erd-col-desc">十六进制颜色</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">sort_order</div>
+      <div class="erd-col-type">INTEGER</div>
+      <div class="erd-col-constraint"><span class="tag tag-default">DEFAULT 0</span></div>
+      <div class="erd-col-desc">排序序号</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">is_system</div>
+      <div class="erd-col-type">BOOLEAN</div>
+      <div class="erd-col-constraint"><span class="tag tag-default">DEFAULT FALSE</span></div>
+      <div class="erd-col-desc">是否系统预设（不可删除）</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">is_active</div>
+      <div class="erd-col-type">BOOLEAN</div>
+      <div class="erd-col-constraint"><span class="tag tag-default">DEFAULT TRUE</span></div>
+      <div class="erd-col-desc">是否启用</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">created_at</div>
+      <div class="erd-col-type">TIMESTAMPTZ</div>
+      <div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div>
+      <div class="erd-col-desc">创建时间</div>
+    </div>
+    <div class="erd-row">
+      <div class="erd-col-name">updated_at</div>
+      <div class="erd-col-type">TIMESTAMPTZ</div>
+      <div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div>
+      <div class="erd-col-desc">更新时间</div>
+    </div>
+  </div>
+</div>
+<p><strong>业务规则：</strong></p>
+<ul>
+  <li>系统初始化时插入 14 个支出大分类 + 6 个收入大分类（<code>family_id = NULL, is_system = TRUE</code>）</li>
+  <li>每个家庭创建时，自动复制系统默认分类到该家庭（<code>family_id = 家庭ID</code>）</li>
+  <li>家庭可以新增自定义分类，也可以停用不需要的分类（软删除）</li>
+</ul>
+
+<!-- 5.5 sub_categories -->
+<h3 id="s5e">5.5 sub_categories（小分类表）</h3>
+<div class="erd-card">
+  <div class="erd-header"><span class="icon">📌</span> sub_categories</div>
+  <div class="erd-body">
+    <div class="erd-row"><div class="erd-col-name">id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-pk">PK</span></div><div class="erd-col-desc">主键</div></div>
+    <div class="erd-row"><div class="erd-col-name">category_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">→ categories.id</div></div>
+    <div class="erd-row"><div class="erd-col-name">name</div><div class="erd-col-type">VARCHAR(50)</div><div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">小分类名称（如"早餐"）</div></div>
+    <div class="erd-row"><div class="erd-col-name">sort_order</div><div class="erd-col-type">INTEGER</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT 0</span></div><div class="erd-col-desc">排序序号</div></div>
+    <div class="erd-row"><div class="erd-col-name">is_active</div><div class="erd-col-type">BOOLEAN</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT TRUE</span></div><div class="erd-col-desc">是否启用</div></div>
+    <div class="erd-row"><div class="erd-col-name">created_at</div><div class="erd-col-type">TIMESTAMPTZ</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div><div class="erd-col-desc">创建时间</div></div>
+    <div class="erd-row"><div class="erd-col-name">updated_at</div><div class="erd-col-type">TIMESTAMPTZ</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div><div class="erd-col-desc">更新时间</div></div>
+  </div>
+</div>
+<p><strong>索引：</strong><code>idx_sub_cat_category</code>(category_id)</p>
+
+<!-- 5.6 transactions -->
+<h3 id="s5f">5.6 transactions（交易记录表）— 核心</h3>
+<div class="erd-card">
+  <div class="erd-header"><span class="icon">💰</span> transactions</div>
+  <div class="erd-body">
+    <div class="erd-row"><div class="erd-col-name">id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-pk">PK</span></div><div class="erd-col-desc">主键</div></div>
+    <div class="erd-row"><div class="erd-col-name">family_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">→ families.id</div></div>
+    <div class="erd-row"><div class="erd-col-name">creator_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">记账人（谁录入的）→ users.id</div></div>
+    <div class="erd-row"><div class="erd-col-name">member_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">消费/收入归属人 → family_members.id</div></div>
+    <div class="erd-row"><div class="erd-col-name">transaction_date</div><div class="erd-col-type">DATE</div><div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">交易日期</div></div>
+    <div class="erd-row"><div class="erd-col-name">transaction_time</div><div class="erd-col-type">TIME</div><div class="erd-col-constraint"></div><div class="erd-col-desc">交易时间（可选）</div></div>
+    <div class="erd-row"><div class="erd-col-name">type</div><div class="erd-col-type">VARCHAR(10)</div><div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">expense / income</div></div>
+    <div class="erd-row"><div class="erd-col-name">amount</div><div class="erd-col-type">DECIMAL(12,2)</div><div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">金额（始终为正数）</div></div>
+    <div class="erd-row"><div class="erd-col-name">description</div><div class="erd-col-type">VARCHAR(200)</div><div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">内容描述</div></div>
+    <div class="erd-row"><div class="erd-col-name">merchant</div><div class="erd-col-type">VARCHAR(100)</div><div class="erd-col-constraint"></div><div class="erd-col-desc">交易对象（商家/收款人）</div></div>
+    <div class="erd-row"><div class="erd-col-name">category_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">→ categories.id</div></div>
+    <div class="erd-row"><div class="erd-col-name">sub_category_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">→ sub_categories.id</div></div>
+    <div class="erd-row"><div class="erd-col-name">payment_method_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span></div><div class="erd-col-desc">→ payment_methods.id</div></div>
+    <div class="erd-row"><div class="erd-col-name">fund_source_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span></div><div class="erd-col-desc">→ fund_sources.id</div></div>
+    <div class="erd-row"><div class="erd-col-name">reimbursement</div><div class="erd-col-type">VARCHAR(20)</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT 'none'</span></div><div class="erd-col-desc">none / pending / reimbursed</div></div>
+    <div class="erd-row"><div class="erd-col-name">necessity</div><div class="erd-col-type">VARCHAR(20)</div><div class="erd-col-constraint"></div><div class="erd-col-desc">necessary / needed / wanted</div></div>
+    <div class="erd-row"><div class="erd-col-name">is_recurring</div><div class="erd-col-type">BOOLEAN</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT FALSE</span></div><div class="erd-col-desc">是否固定周期支出</div></div>
+    <div class="erd-row"><div class="erd-col-name">notes</div><div class="erd-col-type">TEXT</div><div class="erd-col-constraint"></div><div class="erd-col-desc">备注</div></div>
+    <div class="erd-row"><div class="erd-col-name">attachments</div><div class="erd-col-type">JSONB</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT '[]'</span></div><div class="erd-col-desc">附件文件路径数组</div></div>
+    <div class="erd-row"><div class="erd-col-name">is_deleted</div><div class="erd-col-type">BOOLEAN</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT FALSE</span></div><div class="erd-col-desc">软删除标记</div></div>
+    <div class="erd-row"><div class="erd-col-name">created_at</div><div class="erd-col-type">TIMESTAMPTZ</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div><div class="erd-col-desc">创建时间</div></div>
+    <div class="erd-row"><div class="erd-col-name">updated_at</div><div class="erd-col-type">TIMESTAMPTZ</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div><div class="erd-col-desc">更新时间</div></div>
+  </div>
+</div>
+<p><strong>索引：</strong></p>
+<ul>
+  <li><code>idx_trans_family</code>(family_id)</li>
+  <li><code>idx_trans_date</code>(transaction_date)</li>
+  <li><code>idx_trans_family_date</code>(family_id, transaction_date) — 最常用查询路径</li>
+  <li><code>idx_trans_family_type_date</code>(family_id, type, transaction_date)</li>
+  <li><code>idx_trans_category</code>(category_id)</li>
+  <li><code>idx_trans_member</code>(member_id)</li>
+  <li><code>idx_trans_not_deleted</code> — 部分索引 <code>WHERE is_deleted = FALSE</code></li>
+</ul>
+
+<!-- 5.7 budgets -->
+<h3 id="s5g">5.7 budgets（预算表）</h3>
+<div class="erd-card">
+  <div class="erd-header"><span class="icon">📊</span> budgets</div>
+  <div class="erd-body">
+    <div class="erd-row"><div class="erd-col-name">id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-pk">PK</span></div><div class="erd-col-desc">主键</div></div>
+    <div class="erd-row"><div class="erd-col-name">family_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">→ families.id</div></div>
+    <div class="erd-row"><div class="erd-col-name">category_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">→ categories.id</div></div>
+    <div class="erd-row"><div class="erd-col-name">year_month</div><div class="erd-col-type">VARCHAR(7)</div><div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">年月，格式 "2026-06"</div></div>
+    <div class="erd-row"><div class="erd-col-name">amount</div><div class="erd-col-type">DECIMAL(12,2)</div><div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">预算金额</div></div>
+    <div class="erd-row"><div class="erd-col-name">created_at</div><div class="erd-col-type">TIMESTAMPTZ</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div><div class="erd-col-desc">创建时间</div></div>
+    <div class="erd-row"><div class="erd-col-name">updated_at</div><div class="erd-col-type">TIMESTAMPTZ</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div><div class="erd-col-desc">更新时间</div></div>
+  </div>
+</div>
+<p><strong>约束：</strong><code>UNIQUE(family_id, category_id, year_month)</code></p>
+
+<!-- 5.8 payment_methods & fund_sources -->
+<h3 id="s5h">5.8 payment_methods（支付方式表）/ fund_sources（资金来源表）</h3>
+<p>两张表结构相同，以下以 payment_methods 为例：</p>
+<div class="erd-card">
+  <div class="erd-header"><span class="icon">💳</span> payment_methods / fund_sources</div>
+  <div class="erd-body">
+    <div class="erd-row"><div class="erd-col-name">id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-pk">PK</span></div><div class="erd-col-desc">主键</div></div>
+    <div class="erd-row"><div class="erd-col-name">family_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span></div><div class="erd-col-desc">→ families.id（NULL = 系统默认）</div></div>
+    <div class="erd-row"><div class="erd-col-name">name</div><div class="erd-col-type">VARCHAR(50)</div><div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">名称</div></div>
+    <div class="erd-row"><div class="erd-col-name">icon</div><div class="erd-col-type">VARCHAR(50)</div><div class="erd-col-constraint"></div><div class="erd-col-desc">图标标识</div></div>
+    <div class="erd-row"><div class="erd-col-name">sort_order</div><div class="erd-col-type">INTEGER</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT 0</span></div><div class="erd-col-desc">排序</div></div>
+    <div class="erd-row"><div class="erd-col-name">is_active</div><div class="erd-col-type">BOOLEAN</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT TRUE</span></div><div class="erd-col-desc">是否启用</div></div>
+    <div class="erd-row"><div class="erd-col-name">created_at</div><div class="erd-col-type">TIMESTAMPTZ</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div><div class="erd-col-desc">创建时间</div></div>
+  </div>
+</div>
+<p><strong>fund_sources 额外字段：</strong><code>type</code> VARCHAR(20) — 标记账户类型：debit(储蓄卡) / credit(信用卡) / cash(现金) / e_wallet(电子钱包) / investment(理财)</p>
+
+<!-- 5.9 refresh_tokens & op_logs -->
+<h3 id="s5i">5.9 refresh_tokens / operation_logs</h3>
+<div class="erd-card">
+  <div class="erd-header"><span class="icon">🔐</span> refresh_tokens</div>
+  <div class="erd-body">
+    <div class="erd-row"><div class="erd-col-name">id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-pk">PK</span></div><div class="erd-col-desc">主键</div></div>
+    <div class="erd-row"><div class="erd-col-name">user_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">→ users.id</div></div>
+    <div class="erd-row"><div class="erd-col-name">token_hash</div><div class="erd-col-type">VARCHAR(255)</div><div class="erd-col-constraint"><span class="tag tag-uq">UQ</span><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">Refresh Token 的 SHA256 哈希值</div></div>
+    <div class="erd-row"><div class="erd-col-name">expires_at</div><div class="erd-col-type">TIMESTAMPTZ</div><div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">过期时间</div></div>
+    <div class="erd-row"><div class="erd-col-name">revoked_at</div><div class="erd-col-type">TIMESTAMPTZ</div><div class="erd-col-constraint"></div><div class="erd-col-desc">撤销时间（登出时设置）</div></div>
+    <div class="erd-row"><div class="erd-col-name">ip_address</div><div class="erd-col-type">VARCHAR(45)</div><div class="erd-col-constraint"></div><div class="erd-col-desc">客户端 IP</div></div>
+    <div class="erd-row"><div class="erd-col-name">user_agent</div><div class="erd-col-type">TEXT</div><div class="erd-col-constraint"></div><div class="erd-col-desc">浏览器 UA</div></div>
+    <div class="erd-row"><div class="erd-col-name">created_at</div><div class="erd-col-type">TIMESTAMPTZ</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div><div class="erd-col-desc">创建时间</div></div>
+  </div>
+</div>
+
+<div class="erd-card">
+  <div class="erd-header"><span class="icon">📝</span> operation_logs</div>
+  <div class="erd-body">
+    <div class="erd-row"><div class="erd-col-name">id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-pk">PK</span></div><div class="erd-col-desc">主键</div></div>
+    <div class="erd-row"><div class="erd-col-name">user_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"><span class="tag tag-fk">FK</span></div><div class="erd-col-desc">→ users.id</div></div>
+    <div class="erd-row"><div class="erd-col-name">action</div><div class="erd-col-type">VARCHAR(50)</div><div class="erd-col-constraint"><span class="tag tag-nn">NN</span></div><div class="erd-col-desc">login / create / update / delete / export</div></div>
+    <div class="erd-row"><div class="erd-col-name">resource_type</div><div class="erd-col-type">VARCHAR(50)</div><div class="erd-col-constraint"></div><div class="erd-col-desc">transaction / category / budget ...</div></div>
+    <div class="erd-row"><div class="erd-col-name">resource_id</div><div class="erd-col-type">UUID</div><div class="erd-col-constraint"></div><div class="erd-col-desc">操作对象 ID</div></div>
+    <div class="erd-row"><div class="erd-col-name">details</div><div class="erd-col-type">JSONB</div><div class="erd-col-constraint"></div><div class="erd-col-desc">操作详情（变更前后对比等）</div></div>
+    <div class="erd-row"><div class="erd-col-name">ip_address</div><div class="erd-col-type">VARCHAR(45)</div><div class="erd-col-constraint"></div><div class="erd-col-desc">客户端 IP</div></div>
+    <div class="erd-row"><div class="erd-col-name">created_at</div><div class="erd-col-type">TIMESTAMPTZ</div><div class="erd-col-constraint"><span class="tag tag-default">DEFAULT NOW()</span></div><div class="erd-col-desc">操作时间</div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- S6: API CONVENTION -->
+<!-- ============================================================ -->
+<h2 id="s6">6. API 设计规范</h2>
+
+<h3>6.1 基础规范</h3>
+<table>
+  <thead><tr><th>项目</th><th>规范</th></tr></thead>
+  <tbody>
+    <tr><td>基础路径</td><td><code>/api/v1/</code></td></tr>
+    <tr><td>内容类型</td><td><code>application/json</code></td></tr>
+    <tr><td>认证方式</td><td>Header: <code>Authorization: Bearer {access_token}</code></td></tr>
+    <tr><td>时间格式</td><td>ISO 8601: <code>2026-06-13T10:30:00+08:00</code></td></tr>
+    <tr><td>日期格式</td><td><code>2026-06-13</code>（字符串）</td></tr>
+    <tr><td>金额格式</td><td>数字，2 位小数：<code>1234.50</code></td></tr>
+    <tr><td>ID 格式</td><td>UUID 字符串：<code>550e8400-e29b-41d4-a716-446655440000</code></td></tr>
+    <tr><td>分页参数</td><td><code>?page=1&page_size=20</code>（page 从 1 开始，默认 20 条）</td></tr>
+    <tr><td>排序参数</td><td><code>?sort_by=created_at&sort_order=desc</code></td></tr>
+  </tbody>
+</table>
+
+<h3>6.2 统一响应格式</h3>
+<pre><code><span class="cm">// 成功响应</span>
+{
+  <span class="st">"code"</span>: <span class="nu">0</span>,
+  <span class="st">"message"</span>: <span class="st">"success"</span>,
+  <span class="st">"data"</span>: { ... }
+}
+
+<span class="cm">// 列表响应（带分页）</span>
+{
+  <span class="st">"code"</span>: <span class="nu">0</span>,
+  <span class="st">"message"</span>: <span class="st">"success"</span>,
+  <span class="st">"data"</span>: {
+    <span class="st">"items"</span>: [...],
+    <span class="st">"total"</span>: <span class="nu">150</span>,
+    <span class="st">"page"</span>: <span class="nu">1</span>,
+    <span class="st">"page_size"</span>: <span class="nu">20</span>,
+    <span class="st">"total_pages"</span>: <span class="nu">8</span>
+  }
+}
+
+<span class="cm">// 错误响应</span>
+{
+  <span class="st">"code"</span>: <span class="nu">40001</span>,       <span class="cm">// 业务错误码</span>
+  <span class="st">"message"</span>: <span class="st">"用户名已存在"</span>,
+  <span class="st">"data"</span>: <span class="kw">null</span>
+}
+</code></pre>
+
+<h3>6.3 错误码设计</h3>
+<table>
+  <thead><tr><th>HTTP 状态码</th><th>业务错误码</th><th>含义</th></tr></thead>
+  <tbody>
+    <tr><td>200</td><td>0</td><td>成功</td></tr>
+    <tr><td>400</td><td>40001-40099</td><td>参数错误</td></tr>
+    <tr><td>401</td><td>40101-40199</td><td>认证失败（未登录/token 过期/token 无效）</td></tr>
+    <tr><td>403</td><td>40301-40399</td><td>权限不足</td></tr>
+    <tr><td>404</td><td>40401-40499</td><td>资源不存在</td></tr>
+    <tr><td>409</td><td>40901-40999</td><td>冲突（如重复数据）</td></tr>
+    <tr><td>429</td><td>42901</td><td>请求过于频繁</td></tr>
+    <tr><td>500</td><td>50001</td><td>服务器内部错误</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<!-- S7: API ENDPOINTS -->
+<!-- ============================================================ -->
+<h2 id="s7">7. API 接口清单</h2>
+
+<h3 id="s7a">7.1 认证模块 <code>/api/v1/auth</code></h3>
+<table>
+  <thead><tr><th>方法</th><th>路径</th><th>说明</th><th>认证</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag" style="background:#d4edda;color:#155724">POST</span></td><td><code>/auth/register</code></td><td>注册新用户（同时创建家庭和默认分类）</td><td>否</td></tr>
+    <tr><td><span class="tag" style="background:#d4edda;color:#155724">POST</span></td><td><code>/auth/login</code></td><td>登录，返回 access_token + refresh_token</td><td>否</td></tr>
+    <tr><td><span class="tag" style="background:#d4edda;color:#155724">POST</span></td><td><code>/auth/refresh</code></td><td>刷新 access_token</td><td>Refresh Token</td></tr>
+    <tr><td><span class="tag" style="background:#d4edda;color:#155724">POST</span></td><td><code>/auth/logout</code></td><td>登出（撤销 refresh_token）</td><td>是</td></tr>
+    <tr><td><span class="tag" style="background:#fff3cd;color:#856404">PUT</span></td><td><code>/auth/password</code></td><td>修改密码</td><td>是</td></tr>
+  </tbody>
+</table>
+
+<pre><code><span class="cm">// POST /api/v1/auth/register — 请求体</span>
+{
+  <span class="st">"username"</span>: <span class="st">"zhangsan"</span>,
+  <span class="st">"email"</span>: <span class="st">"zhangsan@example.com"</span>,
+  <span class="st">"password"</span>: <span class="st">"MyP@ssw0rd!"</span>,
+  <span class="st">"nickname"</span>: <span class="st">"张三"</span>
+}
+
+<span class="cm">// POST /api/v1/auth/login — 请求体</span>
+{
+  <span class="st">"username"</span>: <span class="st">"zhangsan"</span>,     <span class="cm">// 支持用户名或邮箱</span>
+  <span class="st">"password"</span>: <span class="st">"MyP@ssw0rd!"</span>
+}
+
+<span class="cm">// 登录成功响应</span>
+{
+  <span class="st">"code"</span>: <span class="nu">0</span>,
+  <span class="st">"data"</span>: {
+    <span class="st">"access_token"</span>: <span class="st">"eyJhbG..."</span>,
+    <span class="st">"refresh_token"</span>: <span class="st">"dGhpcyBp..."</span>,
+    <span class="st">"token_type"</span>: <span class="st">"bearer"</span>,
+    <span class="st">"expires_in"</span>: <span class="nu">1800</span>,           <span class="cm">// 30 分钟</span>
+    <span class="st">"user"</span>: {
+      <span class="st">"id"</span>: <span class="st">"uuid..."</span>,
+      <span class="st">"username"</span>: <span class="st">"zhangsan"</span>,
+      <span class="st">"nickname"</span>: <span class="st">"张三"</span>,
+      <span class="st">"family_id"</span>: <span class="st">"uuid..."</span>,
+      <span class="st">"family_name"</span>: <span class="st">"张三的家"</span>
+    }
+  }
+}
+</code></pre>
+
+<h3 id="s7b">7.2 用户/家庭模块</h3>
+<table>
+  <thead><tr><th>方法</th><th>路径</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/users/me</code></td><td>获取当前用户信息</td></tr>
+    <tr><td><span class="tag" style="background:#fff3cd;color:#856404">PUT</span></td><td><code>/users/me</code></td><td>更新个人信息（昵称/头像/手机号）</td></tr>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/families/current</code></td><td>获取当前家庭信息</td></tr>
+    <tr><td><span class="tag" style="background:#fff3cd;color:#856404">PUT</span></td><td><code>/families/current</code></td><td>更新家庭名称</td></tr>
+    <tr><td><span class="tag" style="background:#d4edda;color:#155724">POST</span></td><td><code>/families/join</code></td><td>通过邀请码加入家庭</td></tr>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/families/current/members</code></td><td>获取家庭成员列表</td></tr>
+    <tr><td><span class="tag" style="background:#fff3cd;color:#856404">PUT</span></td><td><code>/families/current/members/{id}</code></td><td>更新成员显示名/角色</td></tr>
+    <tr><td><span class="tag" style="background:#f8d7da;color:#721c24">DELETE</span></td><td><code>/families/current/members/{id}</code></td><td>移除家庭成员</td></tr>
+  </tbody>
+</table>
+
+<h3 id="s7c">7.3 分类/支付/来源管理</h3>
+<table>
+  <thead><tr><th>方法</th><th>路径</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/categories?type=expense</code></td><td>获取分类列表（含子分类）</td></tr>
+    <tr><td><span class="tag" style="background:#d4edda;color:#155724">POST</span></td><td><code>/categories</code></td><td>新增大分类</td></tr>
+    <tr><td><span class="tag" style="background:#fff3cd;color:#856404">PUT</span></td><td><code>/categories/{id}</code></td><td>编辑大分类</td></tr>
+    <tr><td><span class="tag" style="background:#f8d7da;color:#721c24">DELETE</span></td><td><code>/categories/{id}</code></td><td>停用大分类（软删除）</td></tr>
+    <tr><td><span class="tag" style="background:#d4edda;color:#155724">POST</span></td><td><code>/categories/{id}/sub-categories</code></td><td>新增小分类</td></tr>
+    <tr><td><span class="tag" style="background:#fff3cd;color:#856404">PUT</span></td><td><code>/sub-categories/{id}</code></td><td>编辑小分类</td></tr>
+    <tr><td><span class="tag" style="background:#f8d7da;color:#721c24">DELETE</span></td><td><code>/sub-categories/{id}</code></td><td>停用小分类</td></tr>
+    <tr><td colspan="3" style="color:var(--text-muted); font-size:13px;"><em>payment-methods 和 fund-sources 接口结构相同（CRUD 四个接口），路径分别为 /payment-methods 和 /fund-sources</em></td></tr>
+  </tbody>
+</table>
+
+<h3 id="s7d">7.4 交易记录 <code>/api/v1/transactions</code></h3>
+<table>
+  <thead><tr><th>方法</th><th>路径</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/transactions</code></td><td>查询交易列表（分页+筛选+排序）</td></tr>
+    <tr><td><span class="tag" style="background:#d4edda;color:#155724">POST</span></td><td><code>/transactions</code></td><td>新增交易</td></tr>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/transactions/{id}</code></td><td>获取单条交易详情</td></tr>
+    <tr><td><span class="tag" style="background:#fff3cd;color:#856404">PUT</span></td><td><code>/transactions/{id}</code></td><td>编辑交易</td></tr>
+    <tr><td><span class="tag" style="background:#f8d7da;color:#721c24">DELETE</span></td><td><code>/transactions/{id}</code></td><td>删除交易（软删除）</td></tr>
+    <tr><td><span class="tag" style="background:#d4edda;color:#155724">POST</span></td><td><code>/transactions/import</code></td><td>CSV/Excel 批量导入</td></tr>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/transactions/export</code></td><td>导出为 CSV/Excel</td></tr>
+  </tbody>
+</table>
+
+<pre><code><span class="cm">// GET /api/v1/transactions — 查询参数</span>
+?page=1
+&page_size=20
+&type=expense                    <span class="cm">// expense / income</span>
+&date_from=2026-06-01            <span class="cm">// 起始日期</span>
+&date_to=2026-06-30              <span class="cm">// 截止日期</span>
+&category_id=uuid                <span class="cm">// 大分类 ID</span>
+&sub_category_id=uuid            <span class="cm">// 小分类 ID</span>
+&member_id=uuid                  <span class="cm">// 记账人</span>
+&payment_method_id=uuid          <span class="cm">// 支付方式</span>
+&fund_source_id=uuid             <span class="cm">// 资金来源</span>
+&reimbursement=pending           <span class="cm">// 报销状态</span>
+&necessity=wanted                <span class="cm">// 必要程度</span>
+&keyword=早餐                    <span class="cm">// 关键字搜索（描述+对象+备注）</span>
+&min_amount=100                  <span class="cm">// 最小金额</span>
+&max_amount=5000                 <span class="cm">// 最大金额</span>
+&sort_by=transaction_date        <span class="cm">// 排序字段</span>
+&sort_order=desc                 <span class="cm">// 排序方向</span>
+</code></pre>
+
+<h3 id="s7e">7.5 预算管理 <code>/api/v1/budgets</code></h3>
+<table>
+  <thead><tr><th>方法</th><th>路径</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/budgets?year_month=2026-06</code></td><td>获取某月所有分类的预算（含实际执行情况）</td></tr>
+    <tr><td><span class="tag" style="background:#fff3cd;color:#856404">PUT</span></td><td><code>/budgets</code></td><td>批量设置/更新预算</td></tr>
+  </tbody>
+</table>
+
+<pre><code><span class="cm">// GET /budgets?year_month=2026-06 — 响应</span>
+{
+  <span class="st">"code"</span>: <span class="nu">0</span>,
+  <span class="st">"data"</span>: {
+    <span class="st">"year_month"</span>: <span class="st">"2026-06"</span>,
+    <span class="st">"total_budget"</span>: <span class="nu">22000.00</span>,
+    <span class="st">"total_actual"</span>: <span class="nu">15832.50</span>,
+    <span class="st">"total_remaining"</span>: <span class="nu">6167.50</span>,
+    <span class="st">"items"</span>: [
+      {
+        <span class="st">"category_id"</span>: <span class="st">"uuid"</span>,
+        <span class="st">"category_name"</span>: <span class="st">"餐饮美食"</span>,
+        <span class="st">"budget"</span>: <span class="nu">3000.00</span>,
+        <span class="st">"actual"</span>: <span class="nu">2456.80</span>,
+        <span class="st">"remaining"</span>: <span class="nu">543.20</span>,
+        <span class="st">"ratio"</span>: <span class="nu">0.819</span>,           <span class="cm">// 执行率</span>
+        <span class="st">"status"</span>: <span class="st">"normal"</span>          <span class="cm">// normal / warning / exceeded</span>
+      }
+    ]
+  }
+}
+
+<span class="cm">// PUT /budgets — 批量设置</span>
+{
+  <span class="st">"year_month"</span>: <span class="st">"2026-06"</span>,
+  <span class="st">"items"</span>: [
+    { <span class="st">"category_id"</span>: <span class="st">"uuid1"</span>, <span class="st">"amount"</span>: <span class="nu">3000</span> },
+    { <span class="st">"category_id"</span>: <span class="st">"uuid2"</span>, <span class="st">"amount"</span>: <span class="nu">800</span> }
+  ]
+}
+</code></pre>
+
+<h3 id="s7f">7.6 报表模块 <code>/api/v1/reports</code></h3>
+<table>
+  <thead><tr><th>方法</th><th>路径</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/reports/monthly-summary?year=2026</code></td><td>年度各月收入/支出/结余</td></tr>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/reports/category-breakdown?year_month=2026-06</code></td><td>某月各分类支出金额及占比</td></tr>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/reports/fund-source-breakdown?year_month=2026-06</code></td><td>某月各资金来源使用情况</td></tr>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/reports/trend?months=12</code></td><td>最近 N 个月收支趋势</td></tr>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/reports/member-comparison?year_month=2026-06</code></td><td>家庭成员消费对比</td></tr>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/reports/necessity-analysis?year_month=2026-06</code></td><td>"想要"类消费分析</td></tr>
+  </tbody>
+</table>
+
+<h3 id="s7g">7.7 仪表盘 <code>/api/v1/dashboard</code></h3>
+<table>
+  <thead><tr><th>方法</th><th>路径</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/dashboard/overview</code></td><td>本月收支概览 + 预算总进度 + 待报销金额</td></tr>
+    <tr><td><span class="tag" style="background:#cce5ff;color:#004085">GET</span></td><td><code>/dashboard/recent?limit=10</code></td><td>最近 N 条交易记录</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<!-- S8: FRONTEND ARCHITECTURE -->
+<!-- ============================================================ -->
+<h2 id="s8">8. 前端架构</h2>
+
+<h3>8.1 路由设计</h3>
+<table>
+  <thead><tr><th>路由</th><th>页面组件</th><th>权限</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td><code>/login</code></td><td>Login.vue</td><td>公开</td><td>登录页</td></tr>
+    <tr><td><code>/register</code></td><td>Register.vue</td><td>公开</td><td>注册页</td></tr>
+    <tr><td><code>/</code></td><td>Dashboard.vue</td><td>需登录</td><td>仪表盘（默认首页）</td></tr>
+    <tr><td><code>/transactions</code></td><td>TransactionList.vue</td><td>需登录</td><td>交易列表</td></tr>
+    <tr><td><code>/transactions/add</code></td><td>TransactionForm.vue</td><td>需登录</td><td>新增交易</td></tr>
+    <tr><td><code>/transactions/:id/edit</code></td><td>TransactionForm.vue</td><td>需登录</td><td>编辑交易</td></tr>
+    <tr><td><code>/categories</code></td><td>CategoryManage.vue</td><td>需登录</td><td>分类管理</td></tr>
+    <tr><td><code>/budgets</code></td><td>BudgetManage.vue</td><td>需登录</td><td>预算管理</td></tr>
+    <tr><td><code>/reports/monthly</code></td><td>ReportMonthly.vue</td><td>需登录</td><td>月度报表</td></tr>
+    <tr><td><code>/reports/category</code></td><td>ReportCategory.vue</td><td>需登录</td><td>分类报表</td></tr>
+    <tr><td><code>/reports/trend</code></td><td>ReportTrend.vue</td><td>需登录</td><td>趋势分析</td></tr>
+    <tr><td><code>/settings</code></td><td>Settings.vue</td><td>需登录</td><td>设置（个人信息/家庭/支付方式/资金来源）</td></tr>
+  </tbody>
+</table>
+
+<h3>8.2 状态管理（Pinia Stores）</h3>
+<table>
+  <thead><tr><th>Store</th><th>职责</th><th>核心状态</th></tr></thead>
+  <tbody>
+    <tr><td><code>useAuthStore</code></td><td>认证状态</td><td>token, user, isLoggedIn, familyId</td></tr>
+    <tr><td><code>useFamilyStore</code></td><td>家庭信息</td><td>family, members, currentMemberId</td></tr>
+    <tr><td><code>useCategoryStore</code></td><td>分类数据</td><td>expenseCategories, incomeCategories</td></tr>
+    <tr><td><code>useAppStore</code></td><td>全局 UI 状态</td><td>sidebarCollapsed, loading, locale</td></tr>
+  </tbody>
+</table>
+
+<h3>8.3 Axios 请求拦截器设计</h3>
+<pre><code>
+<span class="cm">// 请求拦截器</span>
+axios.interceptors.request.use(config => {
+  <span class="kw">const</span> authStore = useAuthStore();
+  <span class="kw">if</span> (authStore.accessToken) {
+    config.headers.Authorization = <span class="st">`Bearer ${authStore.accessToken}`</span>;
+  }
+  <span class="kw">return</span> config;
+});
+
+<span class="cm">// 响应拦截器</span>
+axios.interceptors.response.use(
+  response => response.data,
+  <span class="kw">async</span> error => {
+    <span class="kw">const</span> originalRequest = error.config;
+
+    <span class="cm">// 401 且未重试过 → 尝试刷新 token</span>
+    <span class="kw">if</span> (error.response?.status === <span class="nu">401</span> && !originalRequest._retry) {
+      originalRequest._retry = <span class="kw">true</span>;
+      <span class="kw">try</span> {
+        <span class="kw">const</span> { data } = <span class="kw">await</span> axios.post(<span class="st">'/api/v1/auth/refresh'</span>, {
+          refresh_token: authStore.refreshToken
+        });
+        authStore.setTokens(data.access_token, data.refresh_token);
+        originalRequest.headers.Authorization = <span class="st">`Bearer ${data.access_token}`</span>;
+        <span class="kw">return</span> axios(originalRequest);
+      } <span class="kw">catch</span> (e) {
+        authStore.logout();
+        router.push(<span class="st">'/login'</span>);
+      }
+    }
+
+    <span class="kw">return</span> Promise.reject(error);
+  }
+);
+</code></pre>
+
+<!-- ============================================================ -->
+<!-- S9: PAGE DESIGN -->
+<!-- ============================================================ -->
+<h2 id="s9">9. 页面设计</h2>
+
+<h3>9.1 布局结构</h3>
+<pre><code>
+┌──────────────────────────────────────────────────────┐
+│  <span class="kw">顶部导航栏</span> (AppHeader)                               │
+│  Logo · 当前月份 · 快速记账按钮 · 用户头像下拉菜单       │
+├────────────┬─────────────────────────────────────────┤
+│            │                                         │
+│  <span class="fn">左侧菜单</span>   │      <span class="fn">主内容区域</span>                         │
+│  (Sidebar)  │      (router-view)                      │
+│            │                                         │
+│  仪表盘     │                                         │
+│  交易记录   │                                         │
+│  预算管理   │                                         │
+│  报表分析   │                                         │
+│  分类管理   │                                         │
+│  系统设置   │                                         │
+│            │                                         │
+└────────────┴─────────────────────────────────────────┘
+</code></pre>
+
+<h3>9.2 核心页面功能说明</h3>
+
+<h4>Dashboard（仪表盘）</h4>
+<ul>
+  <li><strong>顶部概览卡片：</strong>本月收入 / 本月支出 / 本月结余 / 待报销金额</li>
+  <li><strong>预算进度条：</strong>总预算执行率 + 前 3 个接近超支的分类预警</li>
+  <li><strong>收支趋势折线图：</strong>近 6 个月收入 vs 支出</li>
+  <li><strong>分类支出饼图：</strong>本月各分类占比</li>
+  <li><strong>最近交易列表：</strong>最近 5-10 条交易快速预览</li>
+  <li><strong>快捷入口：</strong>「记一笔」「查看报表」「预算管理」</li>
+</ul>
+
+<h4>TransactionForm（记账表单）— 移动优先设计</h4>
+<ul>
+  <li><strong>顶部切换：</strong>支出 / 收入 Tab 切换</li>
+  <li><strong>金额输入：</strong>大号数字键盘风格输入，支持小数</li>
+  <li><strong>分类选择：</strong>网格图标选择大分类 → 弹出小分类列表（移动端友好）</li>
+  <li><strong>日期/时间：</strong>默认当天，可快速选择近 7 天</li>
+  <li><strong>快速填充：</strong>支持"保存为模板"，下次一键调用</li>
+  <li><strong>折叠区域：</strong>支付方式 / 资金来源 / 对象 / 报销 / 必要程度 / 备注（默认折叠，需要时展开）</li>
+</ul>
+
+<h4>TransactionList（交易列表）</h4>
+<ul>
+  <li><strong>顶部筛选栏：</strong>日期范围 / 收支类型 / 分类 / 成员 / 关键字搜索</li>
+  <li><strong>列表形式：</strong>按日期分组，每天显示小计</li>
+  <li><strong>每条记录显示：</strong>分类图标 + 描述 + 对象 + 金额（左对齐），时间和支付方式（右对齐灰色）</li>
+  <li><strong>左滑操作：</strong>编辑 / 删除（移动端）</li>
+  <li><strong>底部统计：</strong>当前筛选结果的合计金额</li>
+  <li><strong>导出按钮：</strong>CSV / Excel 导出</li>
+</ul>
+
+<h3>9.3 响应式断点</h3>
+<table>
+  <thead><tr><th>断点</th><th>宽度</th><th>布局变化</th></tr></thead>
+  <tbody>
+    <tr><td>Mobile</td><td>&lt; 768px</td><td>底部 Tab Bar 替代侧边栏，单列布局，记账表单全屏</td></tr>
+    <tr><td>Tablet</td><td>768px - 1024px</td><td>可收起侧边栏，双列卡片布局</td></tr>
+    <tr><td>Desktop</td><td>&gt; 1024px</td><td>固定侧边栏 + 主内容区，三列/四列仪表盘卡片</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<!-- S10: AUTH & SECURITY -->
+<!-- ============================================================ -->
+<h2 id="s10">10. 认证与安全</h2>
+
+<h3>10.1 JWT 认证流程</h3>
+<pre><code>
+<span class="cm">登录流程：</span>
+  Client ──POST /auth/login──► Server
+                                 │
+                                 ├─ 验证用户名 + bcrypt(password)
+                                 ├─ 生成 access_token (JWT, 30min)
+                                 ├─ 生成 refresh_token (随机 UUID)
+                                 ├─ refresh_token 哈希后存入 DB
+                                 │
+  Client ◄──{ access_token, refresh_token }──┘
+
+<span class="cm">请求认证流程：</span>
+  Client ──GET /xxx [Authorization: Bearer {access_token}]──► Server
+                                                                │
+                                                                ├─ JWT 验签 + 检查过期
+                                                                ├─ 从 token 中提取 user_id
+                                                                ├─ 注入到请求上下文
+                                                                │
+  Client ◄─── 200 ─────────────────────────────────────────────┘
+  或:
+  Client ◄─── 401 (token expired) ──┘
+         │
+         └── POST /auth/refresh { refresh_token }
+                              │
+                              ├─ 验证 refresh_token 哈希
+                              ├─ 检查未过期 + 未撤销
+                              ├─ 生成新 access_token
+                              │
+  Client ◄─── { new_access_token } ──┘
+
+<span class="cm">登出流程：</span>
+  Client ──POST /auth/logout──► Server
+                                 │
+                                 ├─ 撤销当前 refresh_token (设置 revoked_at)
+                                 ├─ 可选：将 access_token 加入 Redis 黑名单
+                                 │
+  Client ◄─── 200 ──┘
+</code></pre>
+
+<h3>10.2 Token 参数</h3>
+<table>
+  <thead><tr><th>参数</th><th>Access Token</th><th>Refresh Token</th></tr></thead>
+  <tbody>
+    <tr><td>类型</td><td>JWT（自包含）</td><td>随机字符串</td></tr>
+    <tr><td>有效期</td><td>30 分钟</td><td>7 天</td></tr>
+    <tr><td>存储位置</td><td>前端内存 / sessionStorage</td><td>httpOnly Cookie 或 localStorage</td></tr>
+    <tr><td>服务端存储</td><td>不存储（无状态验证）</td><td>哈希后存入 DB</td></tr>
+    <tr><td>刷新机制</td><td>过期后用 refresh_token 换取新 token</td><td>轮转：刷新时旧的撤销，签发新的</td></tr>
+  </tbody>
+</table>
+
+<h3>10.3 安全措施清单</h3>
+<table>
+  <thead><tr><th>类别</th><th>措施</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>密码安全</td><td>bcrypt 哈希，cost=12</td><td>不可逆加密存储</td></tr>
+    <tr><td>密码策略</td><td>最少 8 位，包含大小写+数字</td><td>注册和修改密码时校验</td></tr>
+    <tr><td>JWT 安全</td><td>HS256/RSA256 签名，密钥从环境变量读取</td><td>密钥不硬编码</td></tr>
+    <tr><td>Token 黑名单</td><td>登出时 Refresh Token 撤销；Access Token 可选加入 Redis 黑名单</td><td>防止 Token 被盗用</td></tr>
+    <tr><td>HTTPS</td><td>Nginx SSL 终止，全站 HTTPS</td><td>防止中间人攻击</td></tr>
+    <tr><td>CORS</td><td>仅允许前端域名</td><td>防止跨域请求</td></tr>
+    <tr><td>速率限制</td><td>Redis 实现：登录 5次/分钟，API 60次/分钟</td><td>防止暴力破解和 DDoS</td></tr>
+    <tr><td>输入校验</td><td>Pydantic 严格校验所有输入</td><td>防止 SQL 注入和 XSS</td></tr>
+    <tr><td>SQL 注入</td><td>SQLAlchemy ORM 参数化查询</td><td>ORM 层面防护</td></tr>
+    <tr><td>XSS</td><td>前端 Vue 自动转义 + CSP 响应头</td><td>输出编码防护</td></tr>
+    <tr><td>CSRF</td><td>JWT Bearer Token（非 Cookie），天然免疫 CSRF</td><td>-</td></tr>
+    <tr><td>数据隔离</td><td>所有查询自动注入 family_id 过滤</td><td>用户只能看到自己家庭的数据</td></tr>
+    <tr><td>软删除</td><td>交易记录逻辑删除，保留审计痕迹</td><td>关键数据不物理删除</td></tr>
+    <tr><td>操作日志</td><td>记录登录/登出/删除/导出等关键操作</td><td>含 IP、时间、操作详情</td></tr>
+    <tr><td>文件上传</td><td>限制文件类型(jpg/png/pdf)和大小(5MB)</td><td>重命名文件名防止路径遍历</td></tr>
+    <tr><td>环境变量</td><td>敏感配置（密钥/密码）通过 .env 注入</td><td>不提交到代码仓库</td></tr>
+  </tbody>
+</table>
+
+<h3>10.4 数据隔离实现</h3>
+<pre><code><span class="cm"># 所有数据库查询都通过 family_id 过滤</span>
+<span class="cm"># 依赖注入示例：</span>
+
+<span class="kw">async def</span> <span class="fn">get_current_family_id</span>(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> UUID:
+    <span class="st">"""从当前用户获取其家庭 ID，所有业务查询使用此 ID"""</span>
+    member = <span class="kw">await</span> db.execute(
+        select(FamilyMember).where(FamilyMember.user_id == current_user.id)
+    )
+    <span class="kw">return</span> member.scalar_one().family_id
+
+<span class="cm"># 查询交易记录时：</span>
+<span class="kw">async def</span> <span class="fn">list_transactions</span>(
+    family_id: UUID = Depends(get_current_family_id),
+    ...
+):
+    query = select(Transaction).where(
+        Transaction.family_id == family_id,  <span class="cm"># 强制家庭隔离</span>
+        Transaction.is_deleted == <span class="kw">False</span>
+    )
+</code></pre>
+
+<!-- ============================================================ -->
+<!-- S11: DEPLOYMENT -->
+<!-- ============================================================ -->
+<h2 id="s11">11. 部署方案</h2>
+
+<h3>11.1 Docker Compose 编排</h3>
+<pre><code><span class="cm"># docker-compose.yml</span>
+<span class="kw">version</span>: <span class="st">"3.8"</span>
+
+<span class="kw">services</span>:
+  <span class="fn">db</span>:
+    image: <span class="st">postgres:15-alpine</span>
+    environment:
+      POSTGRES_DB: <span class="st">family_finance</span>
+      POSTGRES_USER: <span class="st">${DB_USER}</span>
+      POSTGRES_PASSWORD: <span class="st">${DB_PASSWORD}</span>
+    volumes:
+      - <span class="st">pgdata:/var/lib/postgresql/data</span>
+    ports:
+      - <span class="st">"5432:5432"</span>
+    healthcheck:
+      test: [<span class="st">"CMD-SHELL"</span>, <span class="st">"pg_isready -U ${DB_USER}"</span>]
+      interval: <span class="nu">10s</span>
+      retries: <span class="nu">5</span>
+
+  <span class="fn">redis</span>:
+    image: <span class="st">redis:7-alpine</span>
+    command: <span class="st">redis-server --requirepass ${REDIS_PASSWORD}</span>
+    ports:
+      - <span class="st">"6379:6379"</span>
+
+  <span class="fn">backend</span>:
+    build: <span class="st">./backend</span>
+    environment:
+      DATABASE_URL: <span class="st">postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/family_finance</span>
+      REDIS_URL: <span class="st">redis://:${REDIS_PASSWORD}@redis:6379/0</span>
+      JWT_SECRET_KEY: <span class="st">${JWT_SECRET_KEY}</span>
+      JWT_ALGORITHM: <span class="st">HS256</span>
+      ACCESS_TOKEN_EXPIRE_MINUTES: <span class="nu">30</span>
+      REFRESH_TOKEN_EXPIRE_DAYS: <span class="nu">7</span>
+      UPLOAD_DIR: <span class="st">/app/uploads</span>
+    volumes:
+      - <span class="st">uploads:/app/uploads</span>
+    depends_on:
+      db:
+        condition: <span class="st">service_healthy</span>
+      redis:
+        condition: <span class="st">service_started</span>
+
+  <span class="fn">frontend</span>:
+    build: <span class="st">./frontend</span>
+    <span class="cm"># 构建产物由 nginx 服务</span>
+
+  <span class="fn">nginx</span>:
+    image: <span class="st">nginx:alpine</span>
+    ports:
+      - <span class="st">"80:80"</span>
+      - <span class="st">"443:443"</span>
+    volumes:
+      - <span class="st">./nginx/nginx.conf:/etc/nginx/nginx.conf</span>
+      - <span class="st">./frontend/dist:/usr/share/nginx/html</span>
+      - <span class="st">./certbot/conf:/etc/letsencrypt</span>
+    depends_on:
+      - <span class="st">backend</span>
+
+<span class="kw">volumes</span>:
+  pgdata:
+  uploads:
+</code></pre>
+
+<h3>11.2 环境变量（.env）</h3>
+<pre><code><span class="cm"># .env.example</span>
+DB_USER=<span class="st">family_finance</span>
+DB_PASSWORD=<span class="st">your_strong_db_password_here</span>
+REDIS_PASSWORD=<span class="st">your_redis_password_here</span>
+JWT_SECRET_KEY=<span class="st">your_jwt_secret_at_least_32_chars</span>
+CORS_ORIGINS=<span class="st">https://yourdomain.com</span>
+</code></pre>
+
+<h3>11.3 后端 Dockerfile</h3>
+<pre><code><span class="cm"># backend/Dockerfile</span>
+FROM <span class="st">python:3.11-slim</span>
+
+WORKDIR <span class="st">/app</span>
+
+COPY <span class="st">requirements.txt .</span>
+RUN <span class="st">pip install --no-cache-dir -r requirements.txt</span>
+
+COPY <span class="st">. .</span>
+
+<span class="cm"># 运行数据库迁移后启动服务</span>
+CMD [<span class="st">"sh"</span>, <span class="st">"-c"</span>, <span class="st">"alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"</span>]
+</code></pre>
+
+<h3>11.4 前端 Dockerfile</h3>
+<pre><code><span class="cm"># frontend/Dockerfile (构建阶段)</span>
+FROM <span class="st">node:20-alpine</span> AS build
+WORKDIR <span class="st">/app</span>
+COPY <span class="st">package*.json .</span>
+RUN <span class="st">npm ci</span>
+COPY <span class="st">. .</span>
+RUN <span class="st">npm run build</span>
+
+<span class="cm"># 产物由 nginx 服务，不单独运行</span>
+FROM <span class="st">nginx:alpine</span>
+COPY <span class="st">--from=build /app/dist /usr/share/nginx/html</span>
+</code></pre>
+
+<h3>11.5 初始化脚本</h3>
+<pre><code><span class="cm"># 启动步骤</span>
+<span class="nu">1</span>. <span class="st">cp .env.example .env</span>          <span class="cm"># 复制并修改环境变量</span>
+<span class="nu">2</span>. <span class="st">docker-compose up -d</span>           <span class="cm"># 启动所有服务</span>
+<span class="nu">3</span>. <span class="cm">后端自动运行 alembic upgrade head 创建表</span>
+<span class="nu">4</span>. <span class="cm">后端启动时检查是否有系统默认分类，无则插入</span>
+<span class="nu">5</span>. <span class="st">访问 https://yourdomain.com</span>   <span class="cm"># 注册首个用户即可使用</span>
+</code></pre>
+
+<!-- ============================================================ -->
+<!-- S12: DEV STANDARDS -->
+<!-- ============================================================ -->
+<h2 id="s12">12. 开发规范</h2>
+
+<h3>12.1 后端规范</h3>
+<ul>
+  <li><strong>代码风格：</strong>遵循 PEP 8，使用 <code>black</code> 格式化 + <code>ruff</code> 检查</li>
+  <li><strong>类型标注：</strong>所有函数必须有类型标注，Pydantic 模型作为接口契约</li>
+  <li><strong>分层架构：</strong>Router → Service → Repository（可选）→ Model，路由层不写业务逻辑</li>
+  <li><strong>依赖注入：</strong>使用 FastAPI 的 Depends，family_id 等通过依赖注入获取</li>
+  <li><strong>数据库迁移：</strong>所有 Schema 变更通过 Alembic 迁移脚本，不允许手动修改</li>
+  <li><strong>错误处理：</strong>自定义 HTTPException 子类，统一错误码</li>
+  <li><strong>日志：</strong>使用 Python logging，结构化日志（JSON 格式）</li>
+  <li><strong>测试：</strong>pytest + pytest-asyncio，核心业务逻辑覆盖率 > 80%</li>
+</ul>
+
+<h3>12.2 前端规范</h3>
+<ul>
+  <li><strong>代码风格：</strong>ESLint + Prettier，Vue 3 组合式 API + <code>&lt;script setup&gt;</code></li>
+  <li><strong>组件命名：</strong>PascalCase，文件名与组件名一致</li>
+  <li><strong>API 封装：</strong>每个业务模块一个 api 文件，不直接在组件中调用 axios</li>
+  <li><strong>类型安全：</strong>所有 API 响应定义 TypeScript 接口</li>
+  <li><strong>路由守卫：</strong>未登录自动跳转 /login，已登录访问 /login 自动跳转 /</li>
+  <li><strong>国际化：</strong>初期中文硬编码即可，预留 i18n 接口</li>
+  <li><strong>移动端适配：</strong>核心记账页面优先适配 375px 宽度</li>
+</ul>
+
+<h3>12.3 数据库规范</h3>
+<ul>
+  <li><strong>主键：</strong>所有表使用 UUID 主键，避免自增 ID 暴露信息</li>
+  <li><strong>时间戳：</strong>所有表包含 created_at + updated_at（TIMESTAMP WITH TIME ZONE）</li>
+  <li><strong>软删除：</strong>交易记录使用 is_deleted 字段，不物理删除</li>
+  <li><strong>命名：</strong>表名复数（users, transactions），列名下划线分隔（transaction_date）</li>
+  <li><strong>外键：</strong>所有关联字段必须建立外键约束</li>
+  <li><strong>索引：</strong>高频查询字段必须建索引（见各表索引说明）</li>
+</ul>
+
+<h3>12.4 版本控制</h3>
+<ul>
+  <li><strong>分支策略：</strong>main（生产）→ develop（开发）→ feature/*（功能分支）</li>
+  <li><strong>提交信息：</strong>格式 <code>type(scope): message</code>，如 <code>feat(transaction): add batch import</code></li>
+  <li><strong>.gitignore：</strong>.env、uploads/、node_modules/、__pycache__/、dist/</li>
+</ul>
+
+<div class="divider"></div>
+
+<div class="callout callout-success">
+  <strong>本文档完整定义了家庭记账系统的技术设计规格</strong>
+  包含 10 张数据库表、30+ API 接口、12 个前端页面、完整的认证安全方案和部署配置。可直接将此文档交给 AI 辅助开发工具，按照章节顺序逐步实现。
+</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+
+<button class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+// Back to top button
+window.addEventListener('scroll', () => {
+  document.getElementById('backTop').classList.toggle('show', window.scrollY > 400);
+});
+
+// Sidebar active state
+const links = document.querySelectorAll('.nav-link');
+const sections = [];
+links.forEach(link => {
+  const id = link.getAttribute('href')?.replace('#', '');
+  if (id) {
+    const el = document.getElementById(id);
+    if (el) sections.push({ id, el, link });
+  }
+});
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const match = sections.find(s => s.id === entry.target.id);
+      if (match) match.link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
+
+sections.forEach(s => observer.observe(s.el));
+</script>
+</body>
+</html>
