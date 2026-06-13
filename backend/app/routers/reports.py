@@ -1,7 +1,7 @@
 from datetime import date
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, extract
+from sqlalchemy import select, func
 from app.database import get_db
 from app.models.transaction import Transaction
 from app.models.category import Category
@@ -25,14 +25,14 @@ async def monthly_summary(
 ):
     result = await db.execute(
         select(
-            func.extract("month", Transaction.transaction_date).label("month"),
+            func.month(Transaction.transaction_date).label("month"),
             Transaction.type,
             func.sum(Transaction.amount),
         )
         .where(
             Transaction.family_id == family_id,
             Transaction.is_deleted == False,
-            extract("year", Transaction.transaction_date) == year,
+            func.year(Transaction.transaction_date) == year,
         )
         .group_by("month", Transaction.type)
         .order_by("month")
@@ -102,7 +102,7 @@ async def trend(
 ):
     result = await db.execute(
         select(
-            func.to_char(Transaction.transaction_date, "YYYY-MM").label("month"),
+            func.date_format(Transaction.transaction_date, "%Y-%m").label("month"),
             Transaction.type,
             func.sum(Transaction.amount),
         )

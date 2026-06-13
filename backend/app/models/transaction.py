@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime, date, time, timezone
 from decimal import Decimal
-from sqlalchemy import String, Boolean, DateTime, Date, Time, Numeric, Text, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import String, Boolean, DateTime, Date, Time, Numeric, Text, ForeignKey, Index, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
@@ -16,7 +15,7 @@ class Transaction(Base):
         Index("idx_trans_family_type_date", "family_id", "type", "transaction_date"),
         Index("idx_trans_category", "category_id"),
         Index("idx_trans_member", "member_id"),
-        Index("idx_trans_not_deleted", "family_id", postgresql_where="is_deleted = FALSE"),
+        Index("idx_trans_family_deleted", "family_id", "is_deleted"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -37,7 +36,7 @@ class Transaction(Base):
     necessity: Mapped[str | None] = mapped_column(String(20))  # necessary / needed / wanted
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False)
     notes: Mapped[str | None] = mapped_column(Text)
-    attachments: Mapped[dict | None] = mapped_column(JSONB, default=list)
+    attachments: Mapped[dict | None] = mapped_column(JSON, default=list)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

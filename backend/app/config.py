@@ -3,7 +3,7 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql+asyncpg://family_finance:password@localhost:5432/family_finance"
+    DATABASE_URL: str = "mysql+asyncmy://family_finance:password@localhost:3306/family_finance"
     REDIS_URL: str = "redis://:password@localhost:6379/0"
     JWT_SECRET_KEY: str = "change-me-in-production-at-least-32-chars"
     JWT_ALGORITHM: str = "HS256"

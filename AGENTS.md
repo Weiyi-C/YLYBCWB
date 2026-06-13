@@ -7,7 +7,7 @@ Full spec: `readme.html` (technical design document v1.0, in Chinese).
 
 ## Tech Stack
 
-**Backend**: Python 3.11+ / FastAPI 0.110+ / SQLAlchemy 2.0+ (async) / Alembic / PostgreSQL 15+ / Redis 7+
+**Backend**: Python 3.11+ / FastAPI 0.110+ / SQLAlchemy 2.0+ (async) / Alembic / MySQL 8.0+ / Redis 7+
 **Frontend**: Vue 3.4+ / TypeScript 5.3+ / Vite 5+ / Element Plus 2.5+ / Pinia 2.1+ / Axios / ECharts 5.5+
 **Infra**: Docker Compose / Nginx (static + API proxy) / Let's Encrypt SSL
 
@@ -16,7 +16,7 @@ Full spec: `readme.html` (technical design document v1.0, in Chinese).
 ```
 backend/          # FastAPI app (entrypoint: app/main.py, uvicorn)
   app/
-    models/       # SQLAlchemy ORM models (UUID PKs, TIMESTAMPTZ timestamps)
+    models/       # SQLAlchemy ORM models (UUID PKs via String(36), DateTime timestamps)
     schemas/      # Pydantic request/response models
     routers/      # API route handlers (prefix /api/v1/)
     services/     # Business logic layer
@@ -67,11 +67,12 @@ docker-compose up -d                    # Start all services (db, redis, backend
 
 ## Database Conventions
 
-- All tables: UUID PK (`gen_random_uuid()`), `created_at`, `updated_at` (TIMESTAMPTZ)
+- All tables: UUID PK (`str(uuid.uuid4())` stored as `String(36)`), `created_at`, `updated_at` (`DateTime`, app-layer UTC)
 - Amounts: `DECIMAL(12,2)`, always positive
 - Table names: plural (`users`, `transactions`). Column names: `snake_case`
 - Schema changes: Alembic migrations only — never modify DB manually
-- 10 tables: users, families, family_members, categories, sub_categories, transactions, budgets, payment_methods, fund_sources, refresh_tokens, operation_logs
+- Driver: `mysql+asyncmy://` — async MySQL via asyncmy
+- 11 tables: users, families, family_members, categories, sub_categories, transactions, budgets, payment_methods, fund_sources, refresh_tokens, operation_logs
 
 ## Frontend Conventions
 
